@@ -45,6 +45,7 @@ Open http://localhost:3000
 ## Deployment
 
 Deployed using Vercel.
+Live: https://wind-forecast-analysis.vercel.app/
 
 ## Analysis
 
