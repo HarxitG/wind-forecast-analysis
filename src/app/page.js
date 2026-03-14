@@ -1,66 +1,113 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+
+import { useEffect, useState } from "react";
+
+import WindChart from "../components/WindChart";
+import { loadActualData, loadForecastData } from "../utils/dataLoader";
+import { getForecastForHorizon } from "../utils/forecastFilter";
 
 export default function Home() {
+  const [horizon, setHorizon] = useState(4);
+  const [data, setData] = useState([]);
+
+  const [startDate, setStartDate] = useState("2024-01-01");
+  const [endDate, setEndDate] = useState("2024-01-02");
+
+  useEffect(() => {
+    async function loadData() {
+      const actual = await loadActualData();
+      const forecast = await loadForecastData();
+
+      const filteredActual = actual.filter((a) => {
+        const t = new Date(a.startTime);
+
+        const start = new Date(startDate);
+
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+
+        return t >= start && t <= end;
+      });
+
+      const merged = getForecastForHorizon(filteredActual, forecast, horizon);
+
+      setData(merged);
+    }
+
+    loadData();
+  }, [horizon, startDate, endDate]);
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div
+      style={{
+        padding: "40px",
+        maxWidth: "1100px",
+        margin: "auto",
+        fontFamily: "Arial",
+      }}
+    >
+      <h1>Wind Forecast Monitoring</h1>
+
+      <div
+        style={{
+          display: "flex",
+          gap: "20px",
+          marginBottom: "30px",
+          flexWrap: "wrap",
+        }}
+      >
+        <div>
+          <label>Start Date</label>
+          <br />
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label>End Date</label>
+          <br />
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div style={{ marginBottom: "30px" }}>
+        <label>Forecast Horizon: {horizon} hours</label>
+
+        <br />
+
+        <input
+          type="range"
+          min="0"
+          max="48"
+          value={horizon}
+          onChange={(e) => setHorizon(Number(e.target.value))}
+          style={{ width: "400px" }}
         />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.js file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </div>
+
+      {data.length === 0 && (
+        <p style={{ marginBottom: "20px" }}>
+          No forecast available for selected horizon.
+        </p>
+      )}
+
+      <div
+        style={{
+          background: "#111",
+          padding: "20px",
+          borderRadius: "8px",
+          border: "1px solid #333",
+        }}
+      >
+        <WindChart data={data} />
+      </div>
     </div>
   );
 }
